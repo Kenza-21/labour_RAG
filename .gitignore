@@ -1,0 +1,18 @@
+# Environnement Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets (aucun fichier .env n'existe encore, mais on bloque par avance)
+.env
+.env.*
+
+# Cache de tests
+.pytest_cache/
+
+# Logs et fichiers de sortie temporaires
+*.log
+ask_result.json
+
+# Donnees derivees (regenerables via `python -m app.ingest`)
+data/store*.json

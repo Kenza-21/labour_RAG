@@ -1,0 +1,26 @@
+[
+  {
+    "question": "Combien de jours de conge annuel un salarie a-t-il droit par mois de service ?",
+    "expected_articles": ["231"]
+  },
+  {
+    "question": "Quelle est la duree normale du travail par semaine dans les activites non agricoles ?",
+    "expected_articles": ["184"]
+  },
+  {
+    "question": "A quel intervalle l employeur doit-il payer le salaire aux ouvriers ?",
+    "expected_articles": ["363"]
+  },
+  {
+    "question": "Le travail par roulement est-il autorise ?",
+    "expected_articles": ["187"]
+  },
+  {
+    "question": "Comment est augmentee la duree du conge annuel selon l anciennete ?",
+    "expected_articles": ["232"]
+  },
+  {
+    "question": "Quelles heures supplementaires donnent droit a une majoration ?",
+    "expected_articles": ["349"]
+  }
+]
