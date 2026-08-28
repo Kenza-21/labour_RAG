@@ -1,12 +1,16 @@
 """FastAPI wiring: turns rag.py into HTTP endpoints."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app import rag
 from app.schemas import AskRequest, AskResponse, HealthResponse, SearchRequest, SearchResponse, Source
 from app.store import get_store
+
+_STATIC_DIR = Path(__file__).parent / "static"
 
 _store = None
 
@@ -40,3 +44,8 @@ def search(payload: SearchRequest):
 @app.get("/health", response_model=HealthResponse)
 def health():
     return HealthResponse(status="ok", chunks_indexed=_store.count())
+
+
+# Interface de chat (montée en dernier : /ask, /search, /health gardent la
+# priorité). Sert app/static/index.html sur "/".
+app.mount("/", StaticFiles(directory=_STATIC_DIR, html=True), name="ui")

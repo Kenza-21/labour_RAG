@@ -85,7 +85,8 @@ EMBEDDING_PROVIDER=huggingface CHAT_PROVIDER=ollama python -m uvicorn app.main:a
 
 ### 3. Interroger l'assistant
 
-Interface interactive : **http://127.0.0.1:8000/docs**
+- **Chat web** : <http://127.0.0.1:8000/> (question → réponse citée + panneau des sources avec scores de similarité et seuil d'abstention)
+- API interactive : <http://127.0.0.1:8000/docs>
 
 Ou en ligne de commande :
 ```bash

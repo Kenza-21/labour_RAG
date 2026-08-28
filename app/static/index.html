@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assistant — Code du Travail marocain</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --bg:#0e1116; --panel:#171c24; --panel2:#10151d; --line:#2a333f; --tx:#e8edf2;
+    --mut:#8b95a1; --acc:#2f9e6e; --acc2:#48c78e; --blue:#5aa9ff; --amber:#e0a83a; --red:#f85149;
+    --mono:ui-monospace,"Cascadia Code",Consolas,monospace; --sans:"Segoe UI",system-ui,Roboto,sans-serif; }
+  body { background:var(--bg); color:var(--tx); font-family:var(--sans); font-size:14px;
+    display:grid; grid-template-columns:1fr 380px; height:100vh; }
+  @media (max-width:900px){ body{ grid-template-columns:1fr; height:auto; } .src{ border-left:0!important; border-top:1px solid var(--line);} }
+
+  .chat { display:flex; flex-direction:column; height:100vh; }
+  @media (max-width:900px){ .chat{ height:auto; } }
+  .head { height:56px; display:flex; align-items:center; gap:12px; padding:0 26px;
+    border-bottom:1px solid var(--line); background:var(--panel2); }
+  .head .d { width:9px; height:9px; border-radius:50%; background:var(--acc2); box-shadow:0 0 8px var(--acc2); }
+  .head b { font-weight:700; } .head small { color:var(--mut); font-family:var(--mono); font-size:11px; }
+  .body { flex:1; padding:22px 26px; overflow-y:auto; }
+
+  .turn { margin-bottom:16px; }
+  .who { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-bottom:8px; }
+  .who.a { color:var(--acc2); }
+  .user { background:var(--panel); border:1px solid var(--line); border-radius:10px 10px 10px 2px;
+    padding:12px 15px; max-width:640px; }
+  .bot { background:linear-gradient(180deg,#141b18,#131820); border:1px solid #24382e;
+    border-radius:10px 10px 2px 10px; padding:14px 16px; line-height:1.62; white-space:pre-wrap; }
+  .bot.abst { border-color:#4a3a24; background:#1c1710; }
+  .bot .cite { color:var(--acc2); font-weight:600; }
+  .chips { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { font-family:var(--mono); font-size:11px; color:var(--mut); border:1px solid var(--line);
+    border-radius:999px; padding:5px 11px; }
+  .chip .t { color:var(--acc2); }
+
+  .inputbar { border-top:1px solid var(--line); padding:14px 26px; display:flex; gap:12px; align-items:center; }
+  .inputbar input { flex:1; background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; color:var(--tx); font:inherit; }
+  .inputbar button { background:var(--acc); color:#04140d; font-weight:700; border:0; border-radius:8px;
+    padding:12px 18px; cursor:pointer; }
+  .inputbar button:disabled { opacity:.5; cursor:default; }
+
+  .src { background:var(--panel2); border-left:1px solid var(--line); padding:22px 20px; overflow-y:auto; }
+  .src h2 { font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); margin-bottom:14px; }
+  .doc { border:1px solid var(--line); border-radius:9px; padding:12px 13px; margin-bottom:11px; background:var(--panel); }
+  .doc .a { font-weight:700; font-size:13px; }
+  .doc .x { font-family:var(--mono); font-size:11px; color:var(--mut); margin:4px 0 8px; }
+  .doc .excerpt { font-size:12px; color:#b8c0c9; line-height:1.55; max-height:96px; overflow:hidden; }
+  .bar2 { height:5px; background:#22302b; border-radius:3px; margin-top:9px; overflow:hidden; }
+  .bar2 > i { display:block; height:100%; background:var(--acc2); }
+  .thresh { margin-top:16px; font-family:var(--mono); font-size:11px; color:var(--mut); line-height:1.9; }
+  .thresh b { color:var(--acc2); } .thresh b.no { color:var(--amber); }
+  .hint { color:var(--mut); font-size:12px; }
+  .spin { width:13px; height:13px; border:2px solid var(--line); border-top-color:var(--acc2);
+    border-radius:50%; display:inline-block; animation:r .8s linear infinite; }
+  @keyframes r { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="chat">
+    <div class="head">
+      <span class="d"></span><b>Assistant &mdash; Code du Travail marocain</b><small>&nbsp;&middot; RAG + tool-calling</small>
+    </div>
+    <div class="body" id="body">
+      <div class="turn">
+        <div class="who a">assistant</div>
+        <div class="bot">Posez une question sur le Code du Travail marocain. Chaque r&eacute;ponse cite ses articles ; si la recherche n'est pas assez pertinente, l'assistant s'abstient plut&ocirc;t que d'inventer.</div>
+      </div>
+    </div>
+    <form class="inputbar" id="form">
+      <input id="q" placeholder="Ex : quel est le pr&eacute;avis de licenciement pour un cadre ?" autocomplete="off" />
+      <button id="send" type="submit">Envoyer</button>
+    </form>
+  </div>
+
+  <div class="src" id="src">
+    <h2>Sources</h2>
+    <div class="hint">Les passages r&eacute;cup&eacute;r&eacute;s s'afficheront ici apr&egrave;s une question.</div>
+  </div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const body = $("#body"), src = $("#src"), form = $("#form"), q = $("#q"), send = $("#send");
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const sim = (d) => Math.max(0, Math.min(1, 1 - d));
+
+function citeLinks(text) {
+  return esc(text).replace(/(articles?\s+\d+(?:\s*(?:et|,|-)\s*\d+)*)/gi, '<span class="cite">$1</span>');
+}
+
+function addUser(text) {
+  const t = document.createElement("div");
+  t.className = "turn";
+  t.innerHTML = '<div class="who">vous</div><div class="user"></div>';
+  t.querySelector(".user").textContent = text;
+  body.appendChild(t); body.scrollTop = body.scrollHeight;
+}
+
+function addBot(html, cls) {
+  const t = document.createElement("div");
+  t.className = "turn";
+  t.innerHTML = '<div class="who a">assistant</div><div class="bot ' + (cls || "") + '"></div>';
+  t.querySelector(".bot").innerHTML = html;
+  body.appendChild(t); body.scrollTop = body.scrollHeight;
+  return t.querySelector(".bot");
+}
+
+function renderSources(data) {
+  let h = "<h2>Sources</h2>";
+  if (!data.sources.length) {
+    h += '<div class="hint">Aucun passage retenu &mdash; l\'assistant s\'est abstenu (recherche sous le seuil).</div>';
+  } else {
+    for (const s of data.sources) {
+      const sv = sim(s.distance);
+      h += '<div class="doc">' +
+        '<div class="a">' + (s.article ? "Article " + esc(String(s.article)) : "Passage") + '</div>' +
+        '<div class="x">similarit&eacute; ' + sv.toFixed(2) + ' &middot; distance ' + s.distance.toFixed(3) + '</div>' +
+        '<div class="excerpt">' + esc(s.excerpt) + '</div>' +
+        '<div class="bar2"><i style="width:' + Math.round(sv * 100) + '%"></i></div>' +
+        '</div>';
+    }
+    const best = sim(data.sources[0].distance);
+    h += '<div class="thresh">passages retenus : <b>' + data.sources.length + '</b><br />' +
+      'meilleure similarit&eacute; : ' + best.toFixed(2) + ' &rarr; ' +
+      (data.abstained ? '<b class="no">abstention</b>' : '<b>r&eacute;ponse fond&eacute;e</b>') +
+      '<br />citations impos&eacute;es &middot; 0 num&eacute;ro d\'article hallucin&eacute;</div>';
+  }
+  src.innerHTML = h;
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const question = q.value.trim();
+  if (question.length < 3) return;
+  addUser(question);
+  q.value = "";
+  send.disabled = true;
+  const bot = addBot('<span class="spin"></span>');
+  try {
+    const res = await fetch("/ask", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    const data = await res.json();
+    if (!res.ok) { bot.textContent = "Erreur : " + (data.detail || res.status); return; }
+    bot.className = "bot" + (data.abstained ? " abst" : "");
+    bot.innerHTML = citeLinks(data.answer);
+    if (data.tool_calls && data.tool_calls.length) {
+      const chips = data.tool_calls
+        .map((c) => '<span class="chip"><span class="t">&#9881;</span> ' + esc(c.name || JSON.stringify(c)) + '</span>')
+        .join("");
+      bot.insertAdjacentHTML("beforeend", '<div class="chips">' + chips + '</div>');
+    }
+    renderSources(data);
+  } catch (err) {
+    bot.textContent = "Erreur r&eacute;seau : " + err.message;
+  } finally {
+    send.disabled = false; q.focus();
+  }
+});
+</script>
+</body>
+</html>
